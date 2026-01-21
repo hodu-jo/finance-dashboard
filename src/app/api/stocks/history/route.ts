@@ -38,15 +38,16 @@ export async function GET(request: Request) {
                         close: q.close
                     }))
                 };
-            } catch (e: any) {
+            } catch (e: unknown) {
                 console.error(`Failed to fetch history for ${symbol}:`, e);
-                return { symbol, error: e.message || String(e) };
+                const message = e instanceof Error ? e.message : String(e);
+                return { symbol, error: message };
             }
         });
 
         const results = await Promise.all(promises);
         return NextResponse.json(results);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching stock history:', error);
         return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
     }

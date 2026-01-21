@@ -22,6 +22,7 @@ export default function FearGreedCard({ type }: { type: 'STOCK' | 'CRYPTO' | 'GO
         else if (type === 'GOLD') endpoint = '/api/fng/gold';
         else if (type === 'KOSPI') endpoint = '/api/fng/vkospi';
 
+        // eslint-disable-next-line
         setLoading(true);
         setError(false);
 
@@ -136,8 +137,8 @@ export default function FearGreedCard({ type }: { type: 'STOCK' | 'CRYPTO' | 'GO
     }
 
     return (
-        <div className="bg-white p-6 rounded-2xl shadow-xl border border-gray-100 flex flex-col items-center justify-center relative overflow-hidden h-full">
-            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+        <div className="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 flex flex-col items-center justify-center relative overflow-hidden h-full transition-colors duration-200">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-gray-200 dark:via-gray-600 to-transparent"></div>
 
             {/* Info Icon */}
             <button
@@ -150,7 +151,7 @@ export default function FearGreedCard({ type }: { type: 'STOCK' | 'CRYPTO' | 'GO
                 </svg>
             </button>
 
-            <h2 className="text-gray-500 text-sm font-semibold tracking-wider mb-2 uppercase">
+            <h2 className="text-gray-500 dark:text-gray-400 text-sm font-semibold tracking-wider mb-2 uppercase">
                 {title}
             </h2>
 
@@ -167,28 +168,28 @@ export default function FearGreedCard({ type }: { type: 'STOCK' | 'CRYPTO' | 'GO
                 href={sourceUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-gray-400 hover:text-indigo-500 underline decoration-dotted transition-colors"
+                className="text-xs text-gray-400 dark:text-gray-500 hover:text-indigo-500 underline decoration-dotted transition-colors"
             >
                 Source: {sourceName}
             </a>
 
             {/* Info Overlay */}
             {showInfo && (
-                <div className="absolute inset-0 bg-white/95 backdrop-blur-sm z-10 p-5 flex flex-col text-left overflow-y-auto rounded-2xl transition-opacity animate-fadeIn">
+                <div className="absolute inset-0 bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm z-50 p-5 flex flex-col text-left overflow-y-auto rounded-2xl transition-opacity animate-fadeIn cursor-default" onClick={(e) => e.stopPropagation()}>
                     <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-gray-800 text-sm">{infoTitle}</h3>
-                        <button onClick={() => setShowInfo(false)} className="text-gray-400 hover:text-gray-600">
+                        <h3 className="font-bold text-gray-800 dark:text-white text-sm">{infoTitle}</h3>
+                        <button onClick={() => setShowInfo(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
                                 <path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" />
                             </svg>
                         </button>
                     </div>
-                    <p className="text-xs text-gray-600 mb-3 leading-relaxed">{infoDesc}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-300 mb-3 leading-relaxed">{infoDesc}</p>
                     <div className="space-y-1.5 overflow-y-auto pr-1">
                         {ranges.map((r, idx) => (
-                            <div key={idx} className="flex justify-between text-xs border-b border-gray-100 pb-1 last:border-0">
-                                <span className="font-semibold text-gray-700">{r.range}</span>
-                                <span className="text-gray-500 text-right">{r.desc}</span>
+                            <div key={idx} className="flex justify-between text-xs border-b border-gray-100 dark:border-gray-700 pb-1 last:border-0">
+                                <span className="font-semibold text-gray-700 dark:text-gray-200">{r.range}</span>
+                                <span className="text-gray-500 dark:text-gray-400 text-right">{r.desc}</span>
                             </div>
                         ))}
                     </div>

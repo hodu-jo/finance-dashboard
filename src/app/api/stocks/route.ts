@@ -20,33 +20,44 @@ export async function GET(request: Request) {
         const quotePromises = symbols.map(async (symbol) => {
             try {
                 return await yahooFinance.quote(symbol);
-            } catch (e: any) {
+            } catch (e: unknown) {
                 console.error(`Failed to fetch ${symbol}:`, e);
-                return { symbol, error: e.message || String(e) };
+                const message = e instanceof Error ? e.message : String(e);
+                return { symbol, error: message };
             }
         });
 
         const quotesResults = await Promise.all(quotePromises);
 
         // Map to a simpler format
-        const data = quotesResults.map((q: any) => {
-            if (q.error) return q;
+        const data = quotesResults.map((q) => {
+            if ('error' in q && q.error) return q;
+            // Cast to known type if successful, or check properties
+
+            // Actually, let's just type the return of Promise.all above or cast q properly.
+            // But to fix lint 'no-explicit-any', we can use 'unknown' and type guard, or just simple casting that satisfies lint.
+
+            // Let's rely on the structure we know.
+            const sQuote = q as Record<string, unknown>;
+            if (sQuote.error) return sQuote;
+
             return {
-                symbol: q.symbol,
-                shortName: q.shortName || q.longName || q.symbol,
-                regularMarketPrice: q.regularMarketPrice,
-                regularMarketChange: q.regularMarketChange,
-                regularMarketChangePercent: q.regularMarketChangePercent,
-                currency: q.currency
+                symbol: sQuote.symbol,
+                shortName: sQuote.shortName || sQuote.longName || sQuote.symbol,
+                regularMarketPrice: sQuote.regularMarketPrice,
+                regularMarketChange: sQuote.regularMarketChange,
+                regularMarketChangePercent: sQuote.regularMarketChangePercent,
+                currency: sQuote.currency
             };
         });
 
         return NextResponse.json(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Error fetching stocks:', error);
+        const details = error instanceof Error ? error.message : String(error);
         return NextResponse.json({
             error: 'Failed to fetch stock data',
-            details: error.message || String(error)
+            details
         }, { status: 500 });
     }
 }

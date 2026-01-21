@@ -3,6 +3,15 @@ import Parser from 'rss-parser';
 
 export const revalidate = 3600; // Cache for 1 hour
 
+interface RSSItem {
+    title?: string;
+    link?: string;
+    pubDate?: string;
+    creator?: string;
+    author?: string;
+    [key: string]: unknown;
+}
+
 export async function GET() {
     try {
         const parser = new Parser();
@@ -12,14 +21,14 @@ export async function GET() {
                 'https://news.google.com/rss/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtdHZHZ0pMVWlnQVAB?hl=ko&gl=KR&ceid=KR:ko', // World Econ ID (using KR local for better context or user preference)
                 'https://news.google.com/rss/headlines/section/topic/BUSINESS?hl=ko&gl=KR&ceid=KR:ko' // Generic Business (often KR heavy)
             ],
-            tech: 'https://news.google.com/rss/topics/CAAqKAgKIiJDQkFTRXdvSkwyMHZNR1ptZHpWbUVnSnJieG9DUzFJb0FBUAE?hl=ko&gl=KR&ceid=KR:ko'
+            tech: 'https://news.google.com/rss/headlines/section/topic/SCITECH?hl=ko&gl=KR&ceid=KR:ko'
         };
 
-        const results: Record<string, any[]> = {};
+        const results: Record<string, RSSItem[]> = {};
 
         await Promise.all(Object.entries(feeds).map(async ([key, sources]) => {
             try {
-                let items: any[] = [];
+                let items: RSSItem[] = [];
                 const urls = Array.isArray(sources) ? sources : [sources];
 
                 for (const url of urls) {
@@ -39,7 +48,11 @@ export async function GET() {
                     return !duplicate;
                 });
 
-                items.sort((a, b) => new Date(b.pubDate).getTime() - new Date(a.pubDate).getTime());
+                items.sort((a, b) => {
+                    const dateA = a.pubDate ? new Date(a.pubDate).getTime() : 0;
+                    const dateB = b.pubDate ? new Date(b.pubDate).getTime() : 0;
+                    return dateB - dateA;
+                });
 
                 results[key] = items.slice(0, 5).map(item => ({
                     title: item.title,

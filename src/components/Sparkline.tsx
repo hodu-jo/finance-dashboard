@@ -26,10 +26,10 @@ ChartJS.register(
 
 type SparklineProps = {
     data: { date: string; close: number }[];
-    color?: string;
+    // color prop removed as it was unused and overriding logic is inside
 };
 
-export default function Sparkline({ data, color = '#4F46E5' }: SparklineProps) {
+export default function Sparkline({ data }: SparklineProps) {
     if (!data || data.length === 0) return null;
 
     // Filter out any potential bad data points just in case
@@ -42,8 +42,7 @@ export default function Sparkline({ data, color = '#4F46E5' }: SparklineProps) {
         return date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
     });
 
-    // Determine color based on trend if not provided (or override)
-    // Actually simpler to just use green/red based on start/end
+    // Determine color based on trend
     const startPrice = prices[0];
     const endPrice = prices[prices.length - 1];
     const isPositive = endPrice >= startPrice;
@@ -55,7 +54,7 @@ export default function Sparkline({ data, color = '#4F46E5' }: SparklineProps) {
             {
                 data: prices,
                 borderColor: finalColor,
-                backgroundColor: (context: any) => {
+                backgroundColor: (context: { chart: { ctx: CanvasRenderingContext2D } }) => {
                     const ctx = context.chart.ctx;
                     const gradient = ctx.createLinearGradient(0, 0, 0, 40);
                     gradient.addColorStop(0, isPositive ? 'rgba(239, 68, 68, 0.2)' : 'rgba(59, 130, 246, 0.2)');
