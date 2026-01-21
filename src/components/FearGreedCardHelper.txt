@@ -1,0 +1,6 @@
+function getTypeTitle(type: string) {
+    if (type === 'CRYPTO') return '가상화폐 심리';
+    if (type === 'GOLD') return '금 RSI (14D)';
+    if (type === 'KOSPI') return 'KOSPI 공포지수';
+    return '주식 시장 심리';
+}
