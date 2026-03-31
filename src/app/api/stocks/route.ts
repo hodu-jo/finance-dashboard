@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import YahooFinance from 'yahoo-finance2';
+import { getMockStockData } from '@/lib/mockData';
 
 const yahooFinance = new YahooFinance();
 
-export const revalidate = 60; // Cache for 1 minute (stocks change often)
+export const revalidate = 10800; // Cache for 3 hours (User requested to minimize API hits)
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -21,9 +22,9 @@ export async function GET(request: Request) {
             try {
                 return await yahooFinance.quote(symbol);
             } catch (e: unknown) {
-                console.error(`Failed to fetch ${symbol}:`, e);
-                const message = e instanceof Error ? e.message : String(e);
-                return { symbol, error: message };
+                console.warn(`Failed to fetch ${symbol} from API, using Mock Data:`, e);
+                // FALLBACK: Return Mock Data
+                return getMockStockData(symbol);
             }
         });
 
@@ -32,12 +33,7 @@ export async function GET(request: Request) {
         // Map to a simpler format
         const data = quotesResults.map((q) => {
             if ('error' in q && q.error) return q;
-            // Cast to known type if successful, or check properties
 
-            // Actually, let's just type the return of Promise.all above or cast q properly.
-            // But to fix lint 'no-explicit-any', we can use 'unknown' and type guard, or just simple casting that satisfies lint.
-
-            // Let's rely on the structure we know.
             const sQuote = q as Record<string, unknown>;
             if (sQuote.error) return sQuote;
 
@@ -47,17 +43,16 @@ export async function GET(request: Request) {
                 regularMarketPrice: sQuote.regularMarketPrice,
                 regularMarketChange: sQuote.regularMarketChange,
                 regularMarketChangePercent: sQuote.regularMarketChangePercent,
-                currency: sQuote.currency
+                currency: sQuote.currency,
+                isMock: !!sQuote.isMock // Pass mock flag for UI
             };
         });
 
         return NextResponse.json(data);
     } catch (error: unknown) {
         console.error('Error fetching stocks:', error);
-        const details = error instanceof Error ? error.message : String(error);
-        return NextResponse.json({
-            error: 'Failed to fetch stock data',
-            details
-        }, { status: 500 });
+        // Fallback for global failure
+        const mockData = symbols.map(s => getMockStockData(s));
+        return NextResponse.json(mockData);
     }
 }

@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
 import YahooFinance from 'yahoo-finance2';
+import { getMockHistory } from '@/lib/mockData';
 
 const yahooFinance = new YahooFinance();
 
-export const revalidate = 300; // Cache for 5 minutes
+export const revalidate = 10800; // Cache for 3 hours
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -26,7 +27,9 @@ export async function GET(request: Request) {
                 });
 
                 if (!result || !result.quotes || result.quotes.length === 0) {
-                    return { symbol, error: 'No data' };
+                    // Try mock fallback if data is empty
+                    console.warn(`Empty history for ${symbol}, using Mock`);
+                    return getMockHistory(symbol);
                 }
 
                 const validQuotes = result.quotes.filter(q => typeof q.close === 'number' && q.close > 0);
@@ -39,9 +42,9 @@ export async function GET(request: Request) {
                     }))
                 };
             } catch (e: unknown) {
-                console.error(`Failed to fetch history for ${symbol}:`, e);
-                const message = e instanceof Error ? e.message : String(e);
-                return { symbol, error: message };
+                console.warn(`Failed to fetch history for ${symbol}, using Mock:`, e);
+                // FALLBACK
+                return getMockHistory(symbol);
             }
         });
 
@@ -49,6 +52,8 @@ export async function GET(request: Request) {
         return NextResponse.json(results);
     } catch (error: unknown) {
         console.error('Error fetching stock history:', error);
-        return NextResponse.json({ error: 'Failed to fetch history' }, { status: 500 });
+        // Fallback for global failure
+        const mockData = symbols.map(s => getMockHistory(s));
+        return NextResponse.json(mockData);
     }
 }

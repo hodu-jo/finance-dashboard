@@ -12,6 +12,7 @@ type StockData = {
     currency: string;
     sparklineData?: { date: string; close: number }[];
     error?: string;
+    isMock?: boolean;
 };
 
 interface HistoryResponse {
@@ -22,6 +23,7 @@ interface HistoryResponse {
 export default function MarketStatus() {
     const [stocks, setStocks] = useState<StockData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [lastUpdated, setLastUpdated] = useState<string>('');
 
     // ^IXIC = NASDAQ, ^KS11 = KOSPI, BTC-USD, ETH-USD, GC=F = Gold Futures, KRW=X = USD/KRW
     useEffect(() => {
@@ -41,14 +43,22 @@ export default function MarketStatus() {
                 sparklineData: historyMap.get(q.symbol) || []
             }));
 
-            // Custom ordering if needed, or rely on API return order (which we fixed in WatchList but not here, let's trust API or map)
-            // Ideally we map to the symbols list order.
+            // Custom ordering
             const symbolOrder = symbols.split(',');
             const stockMap = new Map(merged.map((s) => [s.symbol, s]));
             const ordered = symbolOrder.map(s => stockMap.get(s)).filter((s) => s !== undefined) as StockData[];
 
-
             setStocks(ordered);
+
+            // Calculate bucketed time (every 3 hours: 0, 3, 6, 9, 12, 15, 18, 21)
+            const now = new Date();
+            const hours = now.getHours();
+            const bucketHour = Math.floor(hours / 3) * 3;
+            const ampm = bucketHour >= 12 ? 'PM' : 'AM';
+            const displayHour = bucketHour % 12 || 12;
+            const bucketTimeStr = `${displayHour}:00:00 ${ampm}`;
+
+            setLastUpdated(bucketTimeStr);
             setLoading(false);
         }).catch(err => {
             console.error(err);
@@ -70,12 +80,26 @@ export default function MarketStatus() {
 
     if (loading) return <div className="p-6 bg-white rounded-xl shadow-lg border border-gray-100 animate-pulse h-64"></div>;
 
+    const hasAnyMock = stocks.some(s => s.isMock);
+
     return (
         <div className="col-span-1 md:col-span-3 bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 h-full transition-colors duration-200">
-            <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white flex items-center">
-                <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg mr-2 text-sm">📈</span>
-                주요 지수 및 암호화폐 (24h)
-            </h2>
+            <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-gray-800 dark:text-white flex items-center">
+                    <span className="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 p-2 rounded-lg mr-2 text-sm">📈</span>
+                    주요 지수 및 암호화폐 (24h)
+                </h2>
+                <div className="flex items-center gap-2">
+                    {hasAnyMock && (
+                        <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold rounded-full border border-amber-200 dark:border-amber-800/50">
+                            DEMO DATA
+                        </span>
+                    )}
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
+                        {lastUpdated && `Updated: ${lastUpdated}`}
+                    </span>
+                </div>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {stocks.map((stock) => {
                     // Check for error state or missing data
@@ -106,7 +130,10 @@ export default function MarketStatus() {
                         >
                             <div className="flex items-center justify-between mb-2">
                                 <div>
-                                    <p className="font-bold text-gray-700 dark:text-gray-200">{stock.shortName}</p>
+                                    <div className="flex items-center gap-1.5">
+                                        <p className="font-bold text-gray-700 dark:text-gray-200">{stock.shortName}</p>
+                                        {stock.isMock && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" title="Demo Data"></span>}
+                                    </div>
                                     <p className="text-xs text-gray-400 dark:text-gray-500">{stock.symbol}</p>
                                 </div>
                                 <div className="text-right">
