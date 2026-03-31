@@ -25,9 +25,9 @@ export default function MarketStatus() {
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<string>('');
 
-    // ^IXIC = NASDAQ, ^KS11 = KOSPI, BTC-USD, ETH-USD, GC=F = Gold Futures, KRW=X = USD/KRW
+    // ^IXIC = NASDAQ, ^KS11 = KOSPI, BTC-USD, ETH-USD, GC=F = Gold Futures, KRW=X = USD/KRW, DX-Y.NYB = US Dollar Index
     useEffect(() => {
-        const symbols = '^IXIC,^KS11,BTC-USD,ETH-USD,GC=F,KRW=X';
+        const symbols = '^IXIC,^KS11,BTC-USD,ETH-USD,GC=F,KRW=X,DX-Y.NYB';
 
         // Fetch Quotes and History in parallel
         Promise.all([
@@ -74,6 +74,7 @@ export default function MarketStatus() {
             case 'ETH-USD': return 'https://www.investing.com/crypto/ethereum/eth-usd';
             case 'GC=F': return 'https://www.investing.com/commodities/gold';
             case 'KRW=X': return 'https://www.investing.com/currencies/usd-krw';
+            case 'DX-Y.NYB': return 'https://www.investing.com/indices/usdollar';
             default: return `https://www.investing.com/search?q=${symbol}`;
         }
     };

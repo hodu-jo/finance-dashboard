@@ -1,56 +1,30 @@
 import { NextResponse } from 'next/server';
-import YahooFinance from 'yahoo-finance2';
-
-const yahooFinance = new YahooFinance();
 
 export const revalidate = 3600;
 
 export async function GET() {
     try {
-        // Strategy: Try to fetch ^VKOSPI. If it fails (likely), calculate Historical Volatility (HV) from KOSPI (^KS11).
-        // VKOSPI is Implied Volatility (IV), but HV is a good proxy for "Fear" (Turbulence).
-
-        // 1. Fetch KOSPI history for 1 year (approx 252 trading days) to calculate annualized vol
-        const period1 = new Date();
-        period1.setDate(period1.getDate() - 45); // Fetch last 45 days to be safe for 30-day window
-
-        const result = await yahooFinance.chart('^KS11', {
-            period1: period1.toISOString(),
-            interval: '1d'
+        const response = await fetch('https://kr.investing.com/indices/kospi-volatility', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'ko-KR,ko;q=0.9,en-US;q=0.8,en;q=0.7',
+            },
+            next: { revalidate: 3600 }
         });
 
-        if (!result || !result.quotes || result.quotes.length < 22) {
-            throw new Error('Not enough data for KOSPI Volatility');
+        if (!response.ok) {
+            throw new Error(`Investing.com returned status ${response.status}`);
         }
 
-        // Filter valid closes
-        const closes = result.quotes.map(q => q.close).filter(c => typeof c === 'number') as number[];
-
-        // Calculate Log Returns
-        const logReturns = [];
-        for (let i = 1; i < closes.length; i++) {
-            logReturns.push(Math.log(closes[i] / closes[i - 1]));
+        const text = await response.text();
+        const match = text.match(/data-test="instrument-price-last">([\d.]+)</);
+        
+        if (!match || !match[1]) {
+            throw new Error('Could not parse VKOSPI price from HTML');
         }
 
-        // Use last 20 days (approx 1 month trading) for short-term "Fear"
-        const windowSize = 20;
-        const recentReturns = logReturns.slice(-windowSize);
-
-        // Calculate Standard Deviation
-        const mean = recentReturns.reduce((a, b) => a + b, 0) / recentReturns.length;
-        const variance = recentReturns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (recentReturns.length - 1);
-        const stdDev = Math.sqrt(variance);
-
-        // Annualize (multiply by sqrt(252))
-        const annualizedVol = stdDev * Math.sqrt(252) * 100;
-
-        const score = annualizedVol;
-
-        // Rating Logic based on KOSPI HV (General rule of thumb for indices)
-        // Low (< 10): Complacency / Extreme Greed
-        // Normal (10-20): Normal
-        // High (20-30): Fear
-        // Extreme (> 30): Extreme Fear
+        const score = parseFloat(match[1]);
 
         let rating = 'Normal';
         if (score < 10) rating = 'Stable (Greed)';
@@ -61,12 +35,11 @@ export async function GET() {
             score: Number(score.toFixed(2)),
             rating,
             timestamp: new Date().toISOString(),
-            label: 'KOSPI HV (20D)',
-            description: 'Historical Volatility (20-day annualized)'
+            label: 'KOSPI Volatility (VKOSPI)',
+            description: 'Real-time VKOSPI from Investing.com'
         });
     } catch (error) {
         console.error('Error fetching VKOSPI:', error);
-        // Return a safe fallback or error
         return NextResponse.json({ error: 'Failed to fetch Volatility' }, { status: 500 });
     }
 }
