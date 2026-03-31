@@ -26,7 +26,6 @@ ChartJS.register(
 
 type SparklineProps = {
     data: { date: string; close: number }[];
-    // color prop removed as it was unused and overriding logic is inside
 };
 
 export default function Sparkline({ data }: SparklineProps) {

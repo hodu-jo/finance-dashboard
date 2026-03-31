@@ -31,15 +31,28 @@ export async function GET(request: Request) {
         const quotesResults = await Promise.all(quotePromises);
 
         // Map to a simpler format
+        const nameOverrides: Record<string, string> = {
+            'GC=F': 'Gold',
+            'DX-Y.NYB': '달러 인덱스',
+            '^TNX': '미국채 10년물',
+            'CL=F': '원유',
+            '^GSPC': 'S&P 500'
+        };
+
         const data = quotesResults.map((q) => {
             if ('error' in q && q.error) return q;
 
             const sQuote = q as Record<string, unknown>;
             if (sQuote.error) return sQuote;
 
+            let finalName = sQuote.shortName || sQuote.longName || sQuote.symbol;
+            if (nameOverrides[sQuote.symbol as string]) {
+                finalName = nameOverrides[sQuote.symbol as string];
+            }
+
             return {
                 symbol: sQuote.symbol,
-                shortName: sQuote.shortName || sQuote.longName || sQuote.symbol,
+                shortName: finalName,
                 regularMarketPrice: sQuote.regularMarketPrice,
                 regularMarketChange: sQuote.regularMarketChange,
                 regularMarketChangePercent: sQuote.regularMarketChangePercent,

@@ -25,9 +25,9 @@ export default function MarketStatus() {
     const [loading, setLoading] = useState(true);
     const [lastUpdated, setLastUpdated] = useState<string>('');
 
-    // ^IXIC = NASDAQ, ^KS11 = KOSPI, BTC-USD, ETH-USD, GC=F = Gold Futures, KRW=X = USD/KRW, DX-Y.NYB = US Dollar Index, ^TNX = US 10yr, CL=F = Crude Oil
+    // ^GSPC = S&P 500, ^KS11 = KOSPI, BTC-USD, ETH-USD, GC=F = Gold Futures, KRW=X = USD/KRW, DX-Y.NYB = US Dollar Index, ^TNX = US 10yr, CL=F = Crude Oil
     useEffect(() => {
-        const symbols = '^IXIC,^KS11,BTC-USD,ETH-USD,GC=F,KRW=X,DX-Y.NYB,^TNX,CL=F';
+        const symbols = '^GSPC,^KS11,BTC-USD,ETH-USD,GC=F,KRW=X,DX-Y.NYB,^TNX,CL=F';
 
         // Fetch Quotes and History in parallel
         Promise.all([
@@ -38,10 +38,19 @@ export default function MarketStatus() {
             // historyData is an array of { symbol, quotes: [...] }
             const historyMap = new Map(historyData.map((h) => [h.symbol, h.quotes]));
 
-            const merged = quoteData.map((q) => ({
-                ...q,
-                sparklineData: historyMap.get(q.symbol) || []
-            }));
+            const merged = quoteData.map((q) => {
+                const history = historyMap.get(q.symbol) || [];
+                // Prepend previous close to visualize overnight gaps and align sparkline trend with text trend
+                const previousClose = q.regularMarketPrice - q.regularMarketChange;
+                const sparklineData = history.length > 0
+                    ? [{ date: new Date(Date.now() - 86400000).toISOString(), close: previousClose }, ...history]
+                    : [];
+
+                return {
+                    ...q,
+                    sparklineData
+                };
+            });
 
             // Custom ordering
             const symbolOrder = symbols.split(',');
@@ -68,7 +77,7 @@ export default function MarketStatus() {
 
     const getInvestingUrl = (symbol: string) => {
         switch (symbol) {
-            case '^IXIC': return 'https://www.investing.com/indices/nasdaq-composite';
+            case '^GSPC': return 'https://www.investing.com/indices/us-spx-500';
             case '^KS11': return 'https://www.investing.com/indices/kospi';
             case 'BTC-USD': return 'https://www.investing.com/crypto/bitcoin/btc-usd';
             case 'ETH-USD': return 'https://www.investing.com/crypto/ethereum/eth-usd';
