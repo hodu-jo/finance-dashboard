@@ -95,9 +95,6 @@ export default function MarketStatus() {
                             DEMO DATA
                         </span>
                     )}
-                    <span className="text-[10px] text-gray-400 dark:text-gray-500">
-                        {lastUpdated && `Updated: ${lastUpdated}`}
-                    </span>
                 </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
